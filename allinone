@@ -1,0 +1,36 @@
+#!/bin/sh /etc/rc.common
+
+START=99
+STOP=01
+PIDFILE="/var/run/allinone.pid"
+LOGFILE="/var/log/allinone.log"
+
+start() {
+    echo "Starting allinone process"
+    nohup /allinone/allinone_linux_arm64 >> "$LOGFILE" 2>&1 &
+    echo $! > "$PIDFILE"
+}
+
+stop() {
+    echo "Stopping allinone process"
+    if [ -f "$PIDFILE" ]; then
+        pid=$(cat "$PIDFILE")
+        if ps | grep -v grep | grep "$pid" > /dev/null; then
+            kill "$pid"
+            sleep 2
+
+            if ps | grep -v grep | grep "$pid" > /dev/null; then
+                echo "Process $pid did not stop, forcefully terminating."
+                kill -9 "$pid"
+            else
+                echo "Process $pid stopped gracefully."
+            fi
+            rm -f "$PIDFILE"
+        else
+            echo "No running process found with PID $pid."
+            rm -f "$PIDFILE"
+        fi
+    else
+        echo "No PID file found. Is the process running?"
+    fi
+}
